@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Showcase Mini App</title><script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>body{font-family:system-ui;background:var(--tg-theme-bg-color);color:var(--tg-theme-text-color);padding:12px}
+button{display:block;width:100%;margin:6px 0;padding:10px;border:0;border-radius:8px;background:var(--tg-theme-button-color);color:var(--tg-theme-button-text-color)}
+pre{white-space:pre-wrap;background:var(--tg-theme-secondary-bg-color);padding:8px;border-radius:8px;font-size:12px}</style></head><body>
+<h3>🧩 Mini App: WebApp API</h3><pre id="info"></pre>
+<div id="btns"></div><pre id="log">Лог…</pre>
+<script>
+const tg=Telegram.WebApp; tg.ready(); tg.expand();
+const log=s=>{document.getElementById('log').textContent=(typeof s==='string'?s:JSON.stringify(s,null,1))};
+document.getElementById('info').textContent=`Версия: ${tg.version}\nПлатформа: ${tg.platform}\nТема: ${tg.colorScheme}\nПользователь: ${tg.initDataUnsafe?.user?.first_name||'-'}\nstart_param: ${tg.initDataUnsafe?.start_param||'-'}`;
+tg.onEvent('themeChanged',()=>log('Тема сменилась: '+tg.colorScheme));
+tg.MainButton.setParams({text:'Отправить данные (sendData)',is_visible:true}).onClick(()=>tg.sendData(JSON.stringify({from:'mini-app',t:Date.now()})));
+tg.SecondaryButton?.setParams({text:'Вторичная кнопка',is_visible:true,position:'left'}).onClick(()=>tg.showAlert('SecondaryButton нажата'));
+tg.BackButton.show(); tg.BackButton.onClick(()=>tg.showConfirm('Закрыть приложение?',ok=>ok&&tg.close()));
+tg.SettingsButton?.show(); tg.SettingsButton?.onClick(()=>tg.showAlert('Настройки'));
+const acts={
+'Хаптик: impact':()=>tg.HapticFeedback.impactOccurred('heavy'),
+'Хаптик: success':()=>tg.HapticFeedback.notificationOccurred('success'),
+'Хаптик: selection':()=>tg.HapticFeedback.selectionChanged(),
+'Popup с кнопками':()=>tg.showPopup({title:'Popup',message:'Выберите',buttons:[{id:'a',type:'default',text:'A'},{id:'d',type:'destructive',text:'Удалить'},{type:'cancel'}]},id=>log('popup: '+id)),
+'Alert':()=>tg.showAlert('Привет!'),
+'Confirm':()=>tg.showConfirm('Уверены?',r=>log('confirm: '+r)),
+'QR-сканер':()=>tg.showScanQrPopup({text:'Наведите на QR'},t=>{log('QR: '+t);return true}),
+'Буфер обмена (read)':()=>tg.readTextFromClipboard(t=>log('clipboard: '+t)),
+'CloudStorage: записать':()=>tg.CloudStorage.setItem('demo',new Date().toISOString(),(e,ok)=>log(e||'сохранено')),
+'CloudStorage: прочитать':()=>tg.CloudStorage.getItem('demo',(e,v)=>log(e||'demo = '+v)),
+'DeviceStorage':()=>tg.DeviceStorage?tg.DeviceStorage.setItem('k','v',(e)=>log(e||'DeviceStorage ok')):log('нет DeviceStorage'),
+'Полноэкранный режим':()=>tg.isFullscreen?tg.exitFullscreen():tg.requestFullscreen(),
+'На главный экран':()=>tg.addToHomeScreen(),
+'Биометрия':()=>tg.BiometricManager.init(()=>{const b=tg.BiometricManager;if(!b.isBiometricAvailable)return log('биометрия недоступна');b.requestAccess({reason:'Демо'},ok=>ok&&b.authenticate({reason:'Подтвердите'},r=>log('auth: '+r)))}),
+'Геолокация':()=>tg.LocationManager.init(()=>tg.LocationManager.getLocation(l=>log(l||'нет доступа'))),
+'Акселерометр':()=>{tg.Accelerometer?.start({refresh_rate:100});setTimeout(()=>log(tg.Accelerometer),500)},
+'Запросить контакт':()=>tg.requestContact(ok=>log('contact: '+ok)),
+'Разрешить писать':()=>tg.requestWriteAccess(ok=>log('write: '+ok)),
+'Цвет шапки':()=>tg.setHeaderColor('#ff8800'),
+'Подтверждение закрытия':()=>{tg.enableClosingConfirmation();log('включено')},
+'Открыть ссылку':()=>tg.openLink('https://core.telegram.org/bots/webapps'),
+'Открыть t.me':()=>tg.openTelegramLink('https://t.me/telegram'),
+'Поделиться в stories':()=>tg.shareToStory?.('https://picsum.photos/seed/tg/800/600',{text:'Из Mini App'}),
+'Эмодзи-статус':()=>tg.requestEmojiStatusAccess?.(ok=>log('emoji status: '+ok)),
+'Скачать файл':()=>tg.downloadFile?.({url:'https://picsum.photos/seed/tg/800/600',file_name:'photo.jpg'},ok=>log('download: '+ok)),
+'Закрыть':()=>tg.close()};
+for(const [t,f] of Object.entries(acts)){const b=document.createElement('button');b.textContent=t;b.onclick=()=>{try{f()}catch(e){log('Ошибка: '+e.message)}};document.getElementById('btns').append(b)}
+</script></body></html>
